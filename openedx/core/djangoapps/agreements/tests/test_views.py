@@ -16,6 +16,9 @@ from common.djangoapps.student.roles import CourseStaffRole
 from openedx.core.djangoapps.agreements.api import (
     create_integrity_signature,
     get_integrity_signatures_for_course,
+    create_lti_pii_signature,
+    get_pii_receiving_lti_tools,
+    get_lti_pii_signature
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
@@ -218,3 +221,63 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
             )
         )
         self._assert_response(response, status.HTTP_404_NOT_FOUND)
+
+
+@skip_unless_lms
+@patch.dict(settings.FEATURES, {'ENABLE_LTI_PII_SIGNATURE': True})
+class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
+    """
+        Tests for the LTI PII Signature View
+    """
+    USERNAME = "Bob"
+    PASSWORD = "edx"
+
+    OTHER_USERNAME = "Jane"
+
+    STAFF_USERNAME = "Alice"
+
+    def setUp(self):
+        super().setUp()
+
+        self.course = CourseFactory.create()
+
+        self.user = UserFactory.create(
+            username=self.USERNAME,
+            password=self.PASSWORD,
+        )
+        self.other_user = UserFactory.create(
+            username=self.OTHER_USERNAME,
+            password=self.PASSWORD,
+        )
+        self.lti_tools = {"first_lti_tool": "This is the first tool",
+                         "second_lti_tool": "This is the second tool", }
+
+        self.client.login(username=self.USERNAME, password=self.PASSWORD)
+        self.course_id = str(self.course.id)
+
+    def _create_a_signature(self, username, course_id):
+        """
+        Create LTI PII signature for a given username and course id
+        """
+        create_lti_pii_signature(username, course_id, self.lti_tools)
+
+    def _assert_response(self, response, expected_response, user=None, course_id=None):
+        """
+        Assert response is correct for the given information
+        """
+        assert response.status_code == expected_response
+        if user and course_id:
+            data = response.data
+            assert data['username'] == user.username
+            assert data['course_id'] == course_id
+
+    def test_200_get_for_user_request(self):
+        self._create_a_signature(self.user.username, self.course_id)
+        response = self.client.post(
+            reverse(
+                'lti_pii_signature',
+                kwargs={'course_id': self.course_id},
+            )
+        )
+        self._assert_response(response, status.HTTP_200_OK, self.user, self.course_id)
+
