@@ -97,6 +97,7 @@ from ..utils import (
     has_children_visible_to_specific_partition_groups,
     is_currently_visible_to_students,
     is_self_paced,
+    load_services_for_studio,
 )
 
 from .create_xblock import create_xblock
@@ -313,46 +314,6 @@ def modify_xblock(usage_key, request):
         fields=request_data.get("fields"),
         summary_configuration_enabled=request_data.get("summary_configuration_enabled"),
     )
-
-
-class StudioPermissionsService:
-    """
-    Service that can provide information about a user's permissions.
-
-    Deprecated. To be replaced by a more general authorization service.
-
-    Only used by LibraryContentBlock (and library_tools.py).
-    """
-
-    def __init__(self, user):
-        self._user = user
-
-    def can_read(self, course_key):
-        """Does the user have read access to the given course/library?"""
-        return has_studio_read_access(self._user, course_key)
-
-    def can_write(self, course_key):
-        """Does the user have read access to the given course/library?"""
-        return has_studio_write_access(self._user, course_key)
-
-
-def load_services_for_studio(runtime, user):
-    """
-    Function to set some required services used for XBlock edits and studio_view.
-    (i.e. whenever we're not loading _prepare_runtime_for_preview.) This is required to make information
-    about the current user (especially permissions) available via services as needed.
-    """
-    services = {
-        "user": DjangoXBlockUserService(user),
-        "studio_user_permissions": StudioPermissionsService(user),
-        "mako": MakoService(),
-        "settings": SettingsService(),
-        "lti-configuration": ConfigurationService(CourseAllowPIISharingInLTIFlag),
-        "teams_configuration": TeamsConfigurationService(),
-        "library_tools": LibraryToolsService(modulestore(), user.id),
-    }
-
-    runtime._services.update(services)  # lint-amnesty, pylint: disable=protected-access
 
 
 def _update_with_callback(xblock, user, old_metadata=None, old_content=None):
