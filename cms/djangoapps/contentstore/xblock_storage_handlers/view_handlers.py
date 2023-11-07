@@ -31,7 +31,6 @@ from edx_proctoring.api import (
 )
 from edx_proctoring.exceptions import ProctoredExamNotFoundException
 from help_tokens.core import HelpUrlExpert
-from lti_consumer.models import CourseAllowPIISharingInLTIFlag
 from opaque_keys.edx.locator import LibraryUsageLocator
 from pytz import UTC
 from xblock.core import XBlock
@@ -41,7 +40,6 @@ from cms.djangoapps.contentstore.config.waffle import SHOW_REVIEW_RULES_FLAG
 from cms.djangoapps.contentstore.toggles import ENABLE_COPY_PASTE_UNITS
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.lib.ai_aside_summary_config import AiAsideSummaryConfig
-from common.djangoapps.edxmako.services import MakoService
 from common.djangoapps.static_replace import replace_static_urls
 from common.djangoapps.student.auth import (
     has_studio_read_access,
@@ -49,7 +47,6 @@ from common.djangoapps.student.auth import (
 )
 from common.djangoapps.util.date_utils import get_default_time_display
 from common.djangoapps.util.json_request import JsonResponse, expect_json
-from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from openedx.core.djangoapps.bookmarks import api as bookmarks_api
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
@@ -57,9 +54,6 @@ from openedx.core.lib.gating import api as gating_api
 from openedx.core.toggles import ENTRANCE_EXAMS
 from xmodule.course_block import (
     DEFAULT_START_DATE,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.library_tools import (
-    LibraryToolsService,
 )  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore import (
     EdxJSONEncoder,
@@ -77,11 +71,6 @@ from xmodule.modulestore.exceptions import (
 )  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.inheritance import (
     own_metadata,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.services import (
-    ConfigurationService,
-    SettingsService,
-    TeamsConfigurationService,
 )  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.tabs import (
     CourseTabList,
