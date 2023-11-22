@@ -10,14 +10,13 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
 from freezegun import freeze_time
+import json
 
 from common.djangoapps.student.tests.factories import UserFactory, AdminFactory
 from common.djangoapps.student.roles import CourseStaffRole
 from openedx.core.djangoapps.agreements.api import (
     create_integrity_signature,
     get_integrity_signatures_for_course,
-    create_lti_pii_signature,
-    get_pii_receiving_lti_tools,
     get_lti_pii_signature
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
@@ -224,7 +223,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
 
 
 @skip_unless_lms
-@patch.dict(settings.FEATURES, {'ENABLE_LTI_PII_SIGNATURE': True})
+@patch.dict(settings.FEATURES, {'ENABLE_LTI_PII_ACKNOWLEDGEMENT': True})
 class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
     """
         Tests for the LTI PII Signature View
@@ -249,17 +248,12 @@ class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
             username=self.OTHER_USERNAME,
             password=self.PASSWORD,
         )
-        self.lti_tools = {"first_lti_tool": "This is the first tool",
-                         "second_lti_tool": "This is the second tool", }
+        self.lti_tools = json.dumps({"first_lti_tool": "This is the first tool",
+                                     "second_lti_tool": "This is the second tool"})
 
         self.client.login(username=self.USERNAME, password=self.PASSWORD)
         self.course_id = str(self.course.id)
-
-    def _create_a_signature(self, username, course_id):
-        """
-        Create LTI PII signature for a given username and course id
-        """
-        create_lti_pii_signature(username, course_id, self.lti_tools)
+        self.time_created = datetime.now()
 
     def _assert_response(self, response, expected_response, user=None, course_id=None):
         """
@@ -271,13 +265,21 @@ class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
             assert data['username'] == user.username
             assert data['course_id'] == course_id
 
-    def test_200_get_for_user_request(self):
-        self._create_a_signature(self.user.username, self.course_id)
+    @patch.dict(settings.FEATURES, {'ENABLE_LTI_PII_ACKNOWLEDGEMENT': False})
+    def test_post_lti_pii_signature_no_waffle_flag(self):
         response = self.client.post(
             reverse(
                 'lti_pii_signature',
                 kwargs={'course_id': self.course_id},
             )
         )
-        self._assert_response(response, status.HTTP_200_OK, self.user, self.course_id)
+        self._assert_response(response, status.HTTP_404_NOT_FOUND)
 
+    def test_post_lti_pii_signature(self):
+        response = self.client.post(reverse('lti_pii_signature', kwargs={'course_id': self.course_id}),
+                                    {"username": self.user.username, "course_id": self.course_id,
+                                     "lti_tools": self.lti_tools, "created_at": self.time_created})
+        self._assert_response(response, status.HTTP_200_OK, self.user, self.course_id)
+        signature = get_lti_pii_signature(self.user.username, self.course_id)
+        self.assertEqual(signature.user.username, self.user.username)
+        self.assertEqual(signature.lti_tools, self.lti_tools)

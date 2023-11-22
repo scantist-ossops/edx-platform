@@ -153,10 +153,11 @@ class LTIPIISignatureView(AuthenticatedAPIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        serializer = LTIPIISignatureSerializer(request.data)
+        serializer = LTIPIISignatureSerializer(data=request.data)
+        print("request data", request.data)
         if serializer.is_valid():
             username = request.user.username
-            lti_tools = get_pii_receiving_lti_tools(course_id)
+            lti_tools = request.data.get("lti_tools")
             signature = create_lti_pii_signature(username, course_id, lti_tools)
             serializer = LTIPIISignatureSerializer(signature)
         return Response(serializer.data)
