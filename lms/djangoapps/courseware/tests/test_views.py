@@ -944,7 +944,9 @@ class ViewsTestCase(BaseViewsTestCase):
             'name': legal_name,
             'email': self.user.email,
             'country': country,
-            'mktg-permission': False,
+            'certify-economic-hardship': False,
+            'certify-complete-certificate': False,
+            'certify-honor-code': False,
         }
         response = self._submit_financial_assistance_form(data)
         assert response.status_code == 204
@@ -974,7 +976,9 @@ class ViewsTestCase(BaseViewsTestCase):
             'name': '',
             'email': '',
             'country': '',
-            'mktg-permission': False,
+            'certify-economic-hardship': False,
+            'certify-complete-certificate': False,
+            'certify-honor-code': False,
         })
         assert response.status_code == 500
 
@@ -990,7 +994,9 @@ class ViewsTestCase(BaseViewsTestCase):
         form_data = {
             'username': self.user.username,
             'course': 'course-v1:test+TestX+Test_Course',
-            'mktg-permission': False
+            'certify-economic-hardship': False,
+            'certify-complete-certificate': False,
+            'certify-honor-code': False,
         }
         response = self._submit_financial_assistance_form(
             form_data,
