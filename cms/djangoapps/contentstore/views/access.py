@@ -1,8 +1,7 @@
 """ Helper methods for determining user access permissions in Studio """
 
 
-from common.djangoapps.student import auth
-from common.djangoapps.student.roles import CourseInstructorRole
+from .permissions import StudioAccessPermission
 
 
 def get_user_role(user, course_id):
@@ -17,7 +16,7 @@ def get_user_role(user, course_id):
     :param course_id: the course_id of the course we're interested in
     """
     # afaik, this is only used in lti
-    if auth.user_has_role(user, CourseInstructorRole(course_id)):
+    if StudioAccessPermission().has_permission(user):
         return 'instructor'
     else:
         return 'staff'
