@@ -17,6 +17,7 @@ from openedx.core.djangolib.testing.utils import get_mock_request, CacheIsolatio
 from common.djangoapps.student.tests.factories import UserFactory
 
 from ..middleware import (
+    EmailVerificationMiddleware,
     SafeCookieData,
     SafeSessionMiddleware,
     mark_user_change_as_expected,
@@ -615,3 +616,30 @@ class TestTrackRequestUserChanges(TestCase):
         request.user = object()
         assert len(request.debug_user_changes) == 2
         assert "Changing request user but user has no id." in request.debug_user_changes[1]
+
+
+class TestEmailVerificationMiddleware(TestSafeSessionsLogMixin, TestCase):
+    """
+    Test class for EmailVerificationMiddleware.process_response
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.TEST_PASSWORD = 'Password1234'
+        self.user = UserFactory.create(password=self.TEST_PASSWORD)
+        self.addCleanup(set_current_request, None)
+        self.request = get_mock_request()
+        self.client.response = HttpResponse()
+        self.client.response.cookies = SimpleCookie()
+
+    def test_assert_response(self):
+        """
+        Calls EmailVerificationMiddleware.process_response and verifies
+        the response.
+        """
+        self.client.login(username=self.user.username, password=self.TEST_PASSWORD)
+        self.request.session = self.client.session
+        response = EmailVerificationMiddleware(get_response=lambda request: None).process_response(
+            self.request, self.client.response
+        )
+        assert response.status_code == 200

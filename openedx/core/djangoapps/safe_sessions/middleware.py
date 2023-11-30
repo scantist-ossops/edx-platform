@@ -768,6 +768,35 @@ class SafeSessionMiddleware(SessionMiddleware, MiddlewareMixin):
         return encrypt_for_log(str(request.headers), getattr(settings, 'SAFE_SESSIONS_DEBUG_PUBLIC_KEY', None))
 
 
+class EmailVerificationMiddleware(MiddlewareMixin):
+    """
+    This middleware is responsiable to invalidate the user sessions
+    by checking the mismatch between user email in session and user.email.
+
+    User email is set in user session when user logs in,
+    and update user session email on user email change.
+    """
+
+    @staticmethod
+    def _get_user_email_from_session(request):
+        """
+        Return the user_email stored in the session of the request.
+        """
+        session_data = request.session.load()
+        return session_data.get('email', None)
+
+    def process_response(self, request, response):
+        """
+        Invalidate the user session if there is mismatch
+        between email in user session and user email.
+        """
+        user_session_email = self._get_user_email_from_session(request)
+        if request.user.is_authenticated and user_session_email and request.user.email != user_session_email:
+            request.session.flush()
+            _delete_cookie(request, response)
+        return response
+
+
 def obscure_token(value: Union[str, None]) -> Union[str, None]:
     """
     Return a short string that can be used to detect other occurrences

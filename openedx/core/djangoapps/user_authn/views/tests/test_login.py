@@ -1205,3 +1205,17 @@ class LoginSessionViewTest(ApiTestCase, OpenEdxEventsTestMixin):
         # Missing both email and password
         response = self.client.post(url, {})
         self.assertHttpBadRequest(response)
+
+    def test_email_in_session(self):
+        # Login and check email in session
+        data = {
+            "email": self.EMAIL,
+            "password": self.PASSWORD,
+        }
+
+        response = self.client.post(self.url, data)
+        self.assertHttpOK(response)
+
+        # Verify that the email in session set correctly
+        session_data = self.client.session.load()
+        assert session_data.get('email') == self.EMAIL

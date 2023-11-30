@@ -2219,6 +2219,7 @@ MIDDLEWARE = [
     # Instead of SessionMiddleware, we use a more secure version
     # 'django.contrib.sessions.middleware.SessionMiddleware',
     'openedx.core.djangoapps.safe_sessions.middleware.SafeSessionMiddleware',
+    'openedx.core.djangoapps.safe_sessions.middleware.EmailVerificationMiddleware',
 
     # Instead of AuthenticationMiddleware, we use a cached backed version
     #'django.contrib.auth.middleware.AuthenticationMiddleware',
